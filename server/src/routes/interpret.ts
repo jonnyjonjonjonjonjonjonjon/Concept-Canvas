@@ -109,15 +109,24 @@ For entities that logically sit between two others:
 
 Directions: above, below, left, right, above-left, above-right, below-left, below-right
 
-### Spatial grounding guidelines
-ALWAYS think about where things exist in the real world or in conceptual space:
-- process: Steps flow left-to-right. Input on the left, output on the right.
-- cycle: Arrange in a real-world loop. Water: oceans at bottom → evaporation above → atmosphere at top → precipitation down-right → runoff back to bottom.
-- cause_effect: Root causes at BOTTOM, effects/symptoms at TOP. Causes push upward.
-- timeline: Earlier events LEFT, later events RIGHT.
-- containment: Containers above or around, children below.
-- system: Central/most-connected entity as anchor in center. Components radiate outward.
-- problem: Root causes at BOTTOM, symptoms (UDEs) at TOP, solutions RIGHT, constraints LEFT.
+### Layout recipes by mode
+Use these specific patterns — they describe the SHAPE the diagram should form:
+
+**process**: Anchor the first step at left. Each subsequent step goes "right". For 7+ steps, wrap: after step 6, next step goes "below" from step 6, then continue "left" to form a serpentine. The overall shape is a horizontal band.
+
+**cycle**: Form a VISUAL CIRCLE. Anchor the starting entity at bottom-center. Proceed CLOCKWISE using these directions in order: above → above-right → right → below-right → below → below-left → left → above-left. The LAST entity before the cycle closes should be positioned so it is adjacent to the anchor (e.g. "left" or "below-left" of anchor). The overall shape must be roughly circular.
+
+**cause_effect**: Anchor the deepest root cause at bottom-center. Direct effects go "above". If a cause has multiple effects, spread them "above-left" and "above-right". Final outcomes sit at the very top. The overall shape is a tree growing UPWARD from roots.
+
+**timeline**: Anchor the earliest event at left. Each subsequent event goes "right". Concurrent events share the same horizontal position but stack "above"/"below". The overall shape is a horizontal timeline.
+
+**containment**: Anchor the outermost container at top. Children go "below", "below-left", "below-right". Nested children go further below their parent. The overall shape is a hierarchy tree.
+
+**system**: Anchor the most-connected entity at center. Primary subsystems radiate outward using directions that match their real-world position relative to the center. Secondary components go adjacent to their primary. The overall shape is a radial/star.
+
+**problem**: Anchor the core problem at center. Root causes go "below", "below-left", "below-right". Symptoms go "above", "above-left", "above-right". Solutions go "right". Constraints go "left". The overall shape is a cross/diamond.
+
+**auto**: Choose the best recipe above based on the transcript content.
 
 ### Abstract topic spatial metaphors
 Even abstract topics should use spatial metaphors:

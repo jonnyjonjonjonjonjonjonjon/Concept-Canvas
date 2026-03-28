@@ -25,6 +25,7 @@ interface AppState {
   selectedEntityId: string | null
   pendingInput: string | null
   assessment: LayoutAssessment | null
+  assessmentHistory: LayoutAssessment[]
   isAssessing: boolean
 
   // Actions
@@ -79,6 +80,7 @@ export const useStore = create<AppState>((set, get) => ({
   selectedEntityId: null,
   pendingInput: null,
   assessment: null,
+  assessmentHistory: [],
   isAssessing: false,
 
   setDiagram: (diagram) => {
@@ -179,7 +181,13 @@ export const useStore = create<AppState>((set, get) => ({
 
   setPendingInput: (pendingInput) => set({ pendingInput }),
 
-  setAssessment: (assessment) => set({ assessment }),
+  setAssessment: (assessment) => {
+    if (assessment) {
+      set((s) => ({ assessment, assessmentHistory: [...s.assessmentHistory, assessment] }))
+    } else {
+      set({ assessment })
+    }
+  },
   setAssessing: (isAssessing) => set({ isAssessing }),
 
   applyRevisedHints: () => {
