@@ -1,9 +1,9 @@
 import type { DiagramSpec } from '../../../shared/types.ts'
 
 const ANIM_DURATION = 700
-const MS_PER_CHAR = 50
-const MS_PER_EXTRA_ELEMENT = 400
-const MIN_HOLD = 1000
+const MS_PER_CHAR = 75
+const MS_PER_EXTRA_ELEMENT = 600
+const MIN_HOLD = 1500
 
 /**
  * Returns the node IDs the camera should focus on for a given step.
