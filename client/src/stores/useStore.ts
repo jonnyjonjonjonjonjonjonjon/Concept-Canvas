@@ -22,6 +22,7 @@ interface AppState {
   sidebarOpen: boolean
   savedCanvases: SavedCanvas[]
   selectedEntityId: string | null
+  pendingInput: string | null
 
   // Actions
   setDiagram: (diagram: DiagramSpec) => void
@@ -39,6 +40,7 @@ interface AppState {
   loadCanvas: (canvas: SavedCanvas) => void
   deleteCanvas: (id: string) => void
   newCanvas: () => void
+  setPendingInput: (text: string | null) => void
 }
 
 const STORAGE_KEY = 'concept-canvas-saved'
@@ -69,6 +71,7 @@ export const useStore = create<AppState>((set, get) => ({
   sidebarOpen: true,
   savedCanvases: loadSavedCanvases(),
   selectedEntityId: null,
+  pendingInput: null,
 
   setDiagram: (diagram) => {
     const maxStep = Math.max(
@@ -165,4 +168,6 @@ export const useStore = create<AppState>((set, get) => ({
       selectedEntityId: null,
     })
   },
+
+  setPendingInput: (pendingInput) => set({ pendingInput }),
 }))

@@ -23,6 +23,7 @@ export function Canvas() {
   const diagram = useStore((s) => s.diagram)
   const currentStep = useStore((s) => s.currentStep)
   const isLoading = useStore((s) => s.isLoading)
+  const setPendingInput = useStore((s) => s.setPendingInput)
   const isPlaying = useStore((s) => s.isPlaying)
   const { onMoveStart } = useCameraFollow()
 
@@ -71,7 +72,7 @@ export function Canvas() {
 
       {/* Empty state */}
       {!diagram && !isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+        <div className="absolute inset-0 flex items-center justify-center z-10">
           <div className="flex flex-col items-center gap-4 text-center max-w-md px-4">
             <div className="w-16 h-16 rounded-2xl bg-canvas-surface border border-canvas-border flex items-center justify-center">
               <Sparkles size={28} className="text-canvas-accent" />
@@ -82,9 +83,13 @@ export function Canvas() {
             </p>
             <div className="flex flex-wrap justify-center gap-2 mt-2">
               {['How coffee is made', 'Why projects fail', 'The water cycle'].map((ex) => (
-                <span key={ex} className="text-xs px-3 py-1.5 rounded-full bg-canvas-surface border border-canvas-border text-canvas-muted">
+                <button
+                  key={ex}
+                  onClick={() => setPendingInput(ex)}
+                  className="text-xs px-3 py-1.5 rounded-full bg-canvas-surface border border-canvas-border text-canvas-muted hover:text-canvas-text hover:border-canvas-accent/50 transition-colors cursor-pointer"
+                >
                   {ex}
-                </span>
+                </button>
               ))}
             </div>
           </div>

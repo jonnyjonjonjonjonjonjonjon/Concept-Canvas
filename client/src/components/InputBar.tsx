@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Send, Mic, MicOff, Loader2 } from 'lucide-react'
 import { useStore } from '../stores/useStore.ts'
 import { interpretTranscript } from '../api/claude.ts'
@@ -12,6 +12,15 @@ export function InputBar() {
   const setLoading = useStore((s) => s.setLoading)
   const setDiagram = useStore((s) => s.setDiagram)
   const addMessage = useStore((s) => s.addMessage)
+  const pendingInput = useStore((s) => s.pendingInput)
+  const setPendingInput = useStore((s) => s.setPendingInput)
+
+  useEffect(() => {
+    if (pendingInput) {
+      setText(pendingInput)
+      setPendingInput(null)
+    }
+  }, [pendingInput, setPendingInput])
 
   const handleSubmit = useCallback(async (transcript: string) => {
     const trimmed = transcript.trim()
