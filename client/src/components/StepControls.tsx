@@ -28,8 +28,11 @@ export function StepControls() {
 
   if (!diagram) return null
 
+  const annotation = diagram.step_annotations?.[currentStep]
+
   return (
-    <div className="flex items-center justify-center gap-2 py-2 px-4 bg-canvas-surface/80 backdrop-blur-sm border-t border-canvas-border">
+    <div className="flex items-center gap-2 py-2 px-4 bg-canvas-surface/80 backdrop-blur-sm border-t border-canvas-border overflow-hidden">
+      <div className="flex items-center gap-2 flex-shrink-0">
       <button
         onClick={() => setCurrentStep(0)}
         disabled={currentStep <= 0}
@@ -91,6 +94,17 @@ export function StepControls() {
       <span className="text-xs text-canvas-muted ml-2">
         {currentStep}/{maxStep}
       </span>
+      </div>
+
+      {annotation && (
+        <span
+          key={currentStep}
+          className="text-xs text-canvas-muted/90 italic truncate ml-auto max-w-sm animate-fade-in"
+          title={annotation}
+        >
+          {annotation}
+        </span>
+      )}
     </div>
   )
 }

@@ -65,6 +65,7 @@ export interface DiagramSpec {
   detected_mode: StructuralMode;
   entities: Entity[];
   relationships: Relationship[];
+  step_annotations?: Record<number, string>;
 }
 
 // ── API Request / Response ───────────────────────────────────

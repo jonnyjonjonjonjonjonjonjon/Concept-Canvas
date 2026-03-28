@@ -39,7 +39,11 @@ Return ONLY valid JSON matching this exact schema (no markdown, no explanation):
       "label": "optional edge label",
       "reveal_order": 1
     }
-  ]
+  ],
+  "step_annotations": {
+    "1": "Brief narration of what appears at step 1",
+    "2": "Brief narration of what appears at step 2"
+  }
 }
 
 ## Entity Types
@@ -78,6 +82,15 @@ Assign reveal_order starting from 1. This controls the step-by-step build animat
 - Usually: introduce an entity, then show its outgoing relationships in the next step
 - For processes: reveal in sequence (entity1=1, rel1=2, entity2=3, rel2=4...)
 - For systems: reveal core entities first, then connections
+
+## Step Annotations
+For each reveal_order step (1 through the maximum), provide a short annotation in step_annotations.
+Each annotation should be a single sentence (max ~15 words) that narrates what is appearing at that step and why it matters.
+Write from the perspective of a teacher walking the viewer through the concept.
+Examples:
+- "Water evaporates from oceans and lakes into the atmosphere"
+- "Rising moisture cools and condenses into cloud formations"
+- "Gravity pulls precipitation back to Earth as rain or snow"
 
 ## Problem Mode Roles
 Only assign roles when detected_mode is "problem":
@@ -129,6 +142,10 @@ export async function interpretRoute(req: Request, res: Response) {
     if (!diagram.entities || !diagram.relationships || !diagram.title) {
       res.status(500).json({ error: 'Invalid diagram structure from Claude' })
       return
+    }
+
+    if (!diagram.step_annotations) {
+      diagram.step_annotations = {}
     }
 
     res.json({ diagram })
