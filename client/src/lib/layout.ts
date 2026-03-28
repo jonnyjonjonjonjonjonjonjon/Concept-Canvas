@@ -1,4 +1,4 @@
-import type { DiagramSpec, StructuralMode } from '../../../shared/types.ts'
+import type { DiagramSpec, StructuralMode, Entity, SpatialHint } from '../../../shared/types.ts'
 import type { Node, Edge } from '@xyflow/react'
 
 const GAP_X = 280
@@ -43,6 +43,13 @@ function computePositions(
   diagram: DiagramSpec,
   mode: StructuralMode
 ): Map<string, { x: number; y: number }> {
+  // Use spatial layout if any entity has spatial hints
+  const hasSpatialHints = diagram.entities.some(e => e.spatial_hint)
+  if (hasSpatialHints) {
+    return layoutSpatial(diagram)
+  }
+
+  // Fallback to mode-specific layouts (for old saved canvases)
   switch (mode) {
     case 'process':
     case 'timeline':
@@ -60,6 +67,162 @@ function computePositions(
     default:
       return layoutSystem(diagram)
   }
+}
+
+// ── Spatial Layout ──────────────────────────────────────────────
+
+const DIRECTION_OFFSETS: Record<string, { dx: number; dy: number }> = {
+  'above':       { dx: 0,      dy: -GAP_Y },
+  'below':       { dx: 0,      dy: GAP_Y },
+  'left':        { dx: -GAP_X, dy: 0 },
+  'right':       { dx: GAP_X,  dy: 0 },
+  'above-left':  { dx: -GAP_X, dy: -GAP_Y },
+  'above-right': { dx: GAP_X,  dy: -GAP_Y },
+  'below-left':  { dx: -GAP_X, dy: GAP_Y },
+  'below-right': { dx: GAP_X,  dy: GAP_Y },
+}
+
+function layoutSpatial(diagram: DiagramSpec): Map<string, { x: number; y: number }> {
+  const positions = new Map<string, { x: number; y: number }>()
+  const entityMap = new Map<string, Entity>()
+  for (const e of diagram.entities) entityMap.set(e.id, e)
+
+  // Phase 1: Build placement order
+  const { ordered, fallbacks } = buildPlacementOrder(diagram.entities)
+
+  // Phase 2: Place entities
+  for (const entity of ordered) {
+    const hint = entity.spatial_hint as SpatialHint
+    if ('anchor' in hint) {
+      positions.set(entity.id, { x: 0, y: 0 })
+    } else if ('between' in hint) {
+      const [idA, idB] = hint.between
+      const posA = positions.get(idA)
+      const posB = positions.get(idB)
+      if (posA && posB) {
+        const candidate = { x: (posA.x + posB.x) / 2, y: (posA.y + posB.y) / 2 }
+        positions.set(entity.id, deconflictPoint(candidate, positions))
+      } else {
+        fallbacks.push(entity)
+      }
+    } else if ('relative_to' in hint) {
+      const refPos = positions.get(hint.relative_to)
+      if (refPos) {
+        const offset = DIRECTION_OFFSETS[hint.direction] ?? { dx: GAP_X, dy: 0 }
+        const candidate = { x: refPos.x + offset.dx, y: refPos.y + offset.dy }
+        positions.set(entity.id, deconflictPoint(candidate, positions))
+      } else {
+        fallbacks.push(entity)
+      }
+    }
+  }
+
+  // Place fallback entities to the right of everything
+  if (fallbacks.length > 0) {
+    let maxX = 0
+    for (const pos of positions.values()) {
+      if (pos.x > maxX) maxX = pos.x
+    }
+    fallbacks.forEach((entity, i) => {
+      if (!positions.has(entity.id)) {
+        positions.set(entity.id, { x: maxX + GAP_X * 1.5, y: i * GAP_Y })
+      }
+    })
+  }
+
+  return positions
+}
+
+function buildPlacementOrder(entities: Entity[]): { ordered: Entity[]; fallbacks: Entity[] } {
+  const ordered: Entity[] = []
+  const fallbacks: Entity[] = []
+  const placed = new Set<string>()
+  const remaining = [...entities]
+
+  // Find anchor first
+  const anchorIdx = remaining.findIndex(e => e.spatial_hint && 'anchor' in e.spatial_hint)
+  if (anchorIdx >= 0) {
+    const [anchor] = remaining.splice(anchorIdx, 1)
+    ordered.push(anchor)
+    placed.add(anchor.id)
+  } else if (remaining.length > 0) {
+    // No anchor — treat first entity as anchor
+    const [first] = remaining.splice(0, 1)
+    ordered.push(first)
+    placed.add(first.id)
+  }
+
+  // Iteratively place entities whose references are already placed
+  let progress = true
+  while (progress && remaining.length > 0) {
+    progress = false
+    for (let i = remaining.length - 1; i >= 0; i--) {
+      const entity = remaining[i]
+      const hint = entity.spatial_hint
+      if (!hint) {
+        remaining.splice(i, 1)
+        fallbacks.push(entity)
+        progress = true
+        continue
+      }
+
+      let canPlace = false
+      if ('anchor' in hint) {
+        // Extra anchor — treat as fallback
+        remaining.splice(i, 1)
+        fallbacks.push(entity)
+        progress = true
+        continue
+      } else if ('relative_to' in hint) {
+        canPlace = placed.has(hint.relative_to)
+      } else if ('between' in hint) {
+        canPlace = placed.has(hint.between[0]) && placed.has(hint.between[1])
+      }
+
+      if (canPlace) {
+        remaining.splice(i, 1)
+        ordered.push(entity)
+        placed.add(entity.id)
+        progress = true
+      }
+    }
+  }
+
+  // Anything still remaining has unresolvable references
+  for (const entity of remaining) {
+    fallbacks.push(entity)
+  }
+
+  return { ordered, fallbacks }
+}
+
+const MIN_DIST_X = GAP_X * 0.7
+const MIN_DIST_Y = GAP_Y * 0.7
+
+function deconflictPoint(
+  candidate: { x: number; y: number },
+  positions: Map<string, { x: number; y: number }>
+): { x: number; y: number } {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    let conflict = false
+    for (const pos of positions.values()) {
+      if (Math.abs(candidate.x - pos.x) < MIN_DIST_X && Math.abs(candidate.y - pos.y) < MIN_DIST_Y) {
+        conflict = true
+        break
+      }
+    }
+    if (!conflict) return candidate
+    // Nudge: try shifting right, then down, then right+down
+    const nudges = [
+      { x: GAP_X * 0.5, y: 0 },
+      { x: 0, y: GAP_Y * 0.5 },
+      { x: GAP_X * 0.5, y: GAP_Y * 0.5 },
+      { x: -GAP_X * 0.5, y: 0 },
+    ]
+    const nudge = nudges[attempt]
+    candidate = { x: candidate.x + nudge.x, y: candidate.y + nudge.y }
+  }
+  return candidate
 }
 
 /** Process / Timeline: left-to-right chain following flows_into edges */

@@ -37,6 +37,22 @@ export type ProblemRole =
   | 'solution'
   | 'gap';                 // Unknown / uninvestigated
 
+// ── Spatial Hints ────────────────────────────────────────────
+export type SpatialDirection =
+  | 'above'
+  | 'below'
+  | 'left'
+  | 'right'
+  | 'above-left'
+  | 'above-right'
+  | 'below-left'
+  | 'below-right';
+
+export type SpatialHint =
+  | { anchor: true }
+  | { relative_to: string; direction: SpatialDirection }
+  | { between: [string, string] };
+
 // ── Entity ───────────────────────────────────────────────────
 export interface Entity {
   id: string;
@@ -47,6 +63,7 @@ export interface Entity {
   is_gap: boolean;
   reveal_order: number;
   role?: ProblemRole;      // Only in Problem mode
+  spatial_hint?: SpatialHint;
 }
 
 // ── Relationship ─────────────────────────────────────────────

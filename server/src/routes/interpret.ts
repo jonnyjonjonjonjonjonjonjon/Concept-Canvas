@@ -28,7 +28,8 @@ Return ONLY valid JSON matching this exact schema (no markdown, no explanation):
       "description": "Brief description of this entity from the transcript",
       "is_gap": false,
       "reveal_order": 1,
-      "role": null
+      "role": null,
+      "spatial_hint": { "anchor": true }
     }
   ],
   "relationships": [
@@ -92,6 +93,48 @@ Examples:
 - "Rising moisture cools and condenses into cloud formations"
 - "Gravity pulls precipitation back to Earth as rain or snow"
 
+## Spatial Hints
+Every entity MUST have a spatial_hint that describes where it belongs relative to other entities.
+This captures real-world or conceptual spatial relationships — where things would naturally appear
+if you were looking at the real scene or drawing the concept on a whiteboard.
+
+Exactly one entity should be the anchor — this is the central or starting entity:
+  "spatial_hint": { "anchor": true }
+
+All other entities describe their position relative to an already-defined entity:
+  "spatial_hint": { "relative_to": "e1", "direction": "above" }
+
+For entities that logically sit between two others:
+  "spatial_hint": { "between": ["e1", "e3"] }
+
+Directions: above, below, left, right, above-left, above-right, below-left, below-right
+
+### Spatial grounding guidelines
+ALWAYS think about where things exist in the real world or in conceptual space:
+- process: Steps flow left-to-right. Input on the left, output on the right.
+- cycle: Arrange in a real-world loop. Water: oceans at bottom → evaporation above → atmosphere at top → precipitation down-right → runoff back to bottom.
+- cause_effect: Root causes at BOTTOM, effects/symptoms at TOP. Causes push upward.
+- timeline: Earlier events LEFT, later events RIGHT.
+- containment: Containers above or around, children below.
+- system: Central/most-connected entity as anchor in center. Components radiate outward.
+- problem: Root causes at BOTTOM, symptoms (UDEs) at TOP, solutions RIGHT, constraints LEFT.
+
+### Abstract topic spatial metaphors
+Even abstract topics should use spatial metaphors:
+- Hierarchy: authority/importance top-to-bottom (CEO above, employees below)
+- Causation: causes below, effects above (foundation at bottom)
+- Time: past on left, future on right
+- Opposition: opposing forces on left vs right
+- Scope: broad/general above, specific/detailed below
+- Input/Output: inputs left, outputs right
+- Positive/Negative: positive above or right, negative below or left
+
+### Rules for spatial_hint
+1. Exactly ONE entity has { "anchor": true } — pick the most central concept
+2. Every other entity references an entity with a LOWER id (already defined above it)
+3. For "between", both referenced entities must have lower ids
+4. Prefer direct relative_to over between — use between only when truly midway
+
 ## Problem Mode Roles
 Only assign roles when detected_mode is "problem":
 - ude: Undesirable Effect (symptom the speaker complains about)
@@ -109,7 +152,8 @@ Only assign roles when detected_mode is "problem":
 4. Use IDs like e1, e2, e3... for entities
 5. Every entity should connect to at least one other entity
 6. Aim for 4-12 entities depending on transcript complexity
-7. Return ONLY the JSON — no commentary, no markdown fences`
+7. Every entity MUST include a spatial_hint — anchor for one, relative direction for the rest
+8. Return ONLY the JSON — no commentary, no markdown fences`
 
 export async function interpretRoute(req: Request, res: Response) {
   const { transcript, mode } = req.body as InterpretRequest
@@ -148,10 +192,47 @@ export async function interpretRoute(req: Request, res: Response) {
       diagram.step_annotations = {}
     }
 
+    sanitizeSpatialHints(diagram)
+
     res.json({ diagram })
   } catch (error) {
     console.error('[interpret] Error:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'
     res.status(500).json({ error: message })
+  }
+}
+
+const VALID_DIRECTIONS = new Set([
+  'above', 'below', 'left', 'right',
+  'above-left', 'above-right', 'below-left', 'below-right',
+])
+
+function sanitizeSpatialHints(diagram: DiagramSpec) {
+  const entityIds = new Set(diagram.entities.map(e => e.id))
+  let hasAnchor = false
+
+  for (const entity of diagram.entities) {
+    const hint = entity.spatial_hint
+    if (!hint) continue
+
+    if ('anchor' in hint) {
+      if (hasAnchor) {
+        // Only one anchor allowed — strip extras
+        delete entity.spatial_hint
+      } else {
+        hasAnchor = true
+      }
+    } else if ('relative_to' in hint) {
+      if (!entityIds.has(hint.relative_to) || !VALID_DIRECTIONS.has(hint.direction)) {
+        delete entity.spatial_hint
+      }
+    } else if ('between' in hint) {
+      if (!Array.isArray(hint.between) || hint.between.length !== 2 ||
+          !entityIds.has(hint.between[0]) || !entityIds.has(hint.between[1])) {
+        delete entity.spatial_hint
+      }
+    } else {
+      delete entity.spatial_hint
+    }
   }
 }
