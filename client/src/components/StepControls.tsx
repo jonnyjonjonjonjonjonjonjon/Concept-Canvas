@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
-import { ChevronLeft, ChevronRight, Play, Pause, SkipBack, SkipForward } from 'lucide-react'
+import { useEffect, useRef, useCallback } from 'react'
+import { ChevronLeft, ChevronRight, Play, Pause, SkipBack, SkipForward, ClipboardCheck, Loader2 } from 'lucide-react'
 import { useStore } from '../stores/useStore.ts'
 import { getStepTiming } from '../lib/cameraFocus.ts'
+import { assessLayout } from '../api/claude.ts'
 
 export function StepControls() {
   const currentStep = useStore((s) => s.currentStep)
@@ -12,7 +13,23 @@ export function StepControls() {
   const stepBack = useStore((s) => s.stepBack)
   const togglePlay = useStore((s) => s.togglePlay)
   const setCurrentStep = useStore((s) => s.setCurrentStep)
+  const isAssessing = useStore((s) => s.isAssessing)
+  const setAssessing = useStore((s) => s.setAssessing)
+  const setAssessment = useStore((s) => s.setAssessment)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleAssess = useCallback(async () => {
+    if (!diagram || isAssessing) return
+    setAssessing(true)
+    try {
+      const response = await assessLayout({ diagram })
+      setAssessment(response.assessment)
+    } catch (error) {
+      console.error('Assessment failed:', error)
+    } finally {
+      setAssessing(false)
+    }
+  }, [diagram, isAssessing, setAssessing, setAssessment])
 
   useEffect(() => {
     if (!isPlaying || !diagram) return
@@ -92,6 +109,18 @@ export function StepControls() {
       <span className="text-xs text-canvas-muted ml-2">
         {currentStep}/{maxStep}
       </span>
+
+      {currentStep >= maxStep && !isPlaying && (
+        <button
+          onClick={handleAssess}
+          disabled={isAssessing}
+          className="ml-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-canvas-border text-xs text-canvas-muted hover:text-canvas-text hover:border-canvas-accent/50 disabled:opacity-50 transition-colors"
+          title="Assess layout quality"
+        >
+          {isAssessing ? <Loader2 size={13} className="animate-spin" /> : <ClipboardCheck size={13} />}
+          {isAssessing ? 'Assessing...' : 'Assess'}
+        </button>
+      )}
     </div>
   )
 }

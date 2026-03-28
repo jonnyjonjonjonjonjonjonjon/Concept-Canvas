@@ -95,6 +95,33 @@ export interface InterpretResponse {
   diagram: DiagramSpec;
 }
 
+// ── Layout Assessment ────────────────────────────────────────
+export interface CriterionScore {
+  score: number;
+  note: string;
+}
+
+export interface LayoutAssessment {
+  expert_persona: string;
+  verdict: string;
+  criteria: {
+    spatial_coherence: CriterionScore;
+    flow_readability: CriterionScore;
+    grouping: CriterionScore;
+    balance: CriterionScore;
+    expert_intuition: CriterionScore;
+  };
+  revised_hints?: Record<string, SpatialHint>;
+}
+
+export interface AssessRequest {
+  diagram: DiagramSpec;
+}
+
+export interface AssessResponse {
+  assessment: LayoutAssessment;
+}
+
 // ── Conversation Message ─────────────────────────────────────
 export interface ConversationMessage {
   id: string;

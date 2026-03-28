@@ -14,6 +14,7 @@ import { getStepTiming } from '../lib/cameraFocus.ts'
 import { useCameraFollow } from '../hooks/useCameraFollow.ts'
 import { ConceptNode } from './ConceptNode.tsx'
 import { ConceptEdge, EdgeMarkers } from './ConceptEdge.tsx'
+import { AssessmentPanel } from './AssessmentPanel.tsx'
 import { Sparkles } from 'lucide-react'
 
 const nodeTypes: NodeTypes = { concept: ConceptNode }
@@ -110,6 +111,9 @@ export function Canvas() {
           </div>
         </div>
       )}
+
+      {/* Assessment panel */}
+      <AssessmentPanel />
 
       {/* Title overlay */}
       {diagram && (

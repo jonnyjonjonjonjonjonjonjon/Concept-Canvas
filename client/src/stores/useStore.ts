@@ -4,6 +4,7 @@ import type {
   StructuralMode,
   ConversationMessage,
   SavedCanvas,
+  LayoutAssessment,
 } from '../../../shared/types.ts'
 
 interface AppState {
@@ -23,6 +24,8 @@ interface AppState {
   savedCanvases: SavedCanvas[]
   selectedEntityId: string | null
   pendingInput: string | null
+  assessment: LayoutAssessment | null
+  isAssessing: boolean
 
   // Actions
   setDiagram: (diagram: DiagramSpec) => void
@@ -41,6 +44,9 @@ interface AppState {
   deleteCanvas: (id: string) => void
   newCanvas: () => void
   setPendingInput: (text: string | null) => void
+  setAssessment: (assessment: LayoutAssessment | null) => void
+  setAssessing: (isAssessing: boolean) => void
+  applyRevisedHints: () => void
 }
 
 const STORAGE_KEY = 'concept-canvas-saved'
@@ -72,6 +78,8 @@ export const useStore = create<AppState>((set, get) => ({
   savedCanvases: loadSavedCanvases(),
   selectedEntityId: null,
   pendingInput: null,
+  assessment: null,
+  isAssessing: false,
 
   setDiagram: (diagram) => {
     const maxStep = Math.max(
@@ -170,4 +178,23 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   setPendingInput: (pendingInput) => set({ pendingInput }),
+
+  setAssessment: (assessment) => set({ assessment }),
+  setAssessing: (isAssessing) => set({ isAssessing }),
+
+  applyRevisedHints: () => {
+    const { diagram, assessment } = get()
+    if (!diagram || !assessment?.revised_hints) return
+
+    const revised = assessment.revised_hints
+    const updatedEntities = diagram.entities.map((entity) => {
+      const newHint = revised[entity.id]
+      return newHint ? { ...entity, spatial_hint: newHint } : entity
+    })
+
+    const updatedDiagram: DiagramSpec = { ...diagram, entities: updatedEntities }
+    // Clear assessment and re-render with new layout + animation
+    set({ assessment: null })
+    get().setDiagram(updatedDiagram)
+  },
 }))
