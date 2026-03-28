@@ -56,8 +56,19 @@ function getBestHandles(
 ): { sourceHandle: string; targetHandle: string } {
   const dx = targetPos.x - sourcePos.x
   const dy = targetPos.y - sourcePos.y
+  const absDx = Math.abs(dx)
+  const absDy = Math.abs(dy)
 
-  if (Math.abs(dx) > Math.abs(dy)) {
+  // Diagonal: when both axes have significant movement (within 2x of each other)
+  const isDiagonal = absDx > 0 && absDy > 0 && absDx / absDy < 2 && absDy / absDx < 2
+  if (isDiagonal) {
+    if (dx > 0 && dy < 0) return { sourceHandle: 'top', targetHandle: 'left' }      // above-right
+    if (dx < 0 && dy < 0) return { sourceHandle: 'top', targetHandle: 'right' }     // above-left
+    if (dx > 0 && dy > 0) return { sourceHandle: 'bottom', targetHandle: 'left' }   // below-right
+    if (dx < 0 && dy > 0) return { sourceHandle: 'bottom', targetHandle: 'right' }  // below-left
+  }
+
+  if (absDx > absDy) {
     // Horizontal dominant
     return dx > 0
       ? { sourceHandle: 'right', targetHandle: 'left' }
@@ -107,10 +118,10 @@ const DIRECTION_OFFSETS: Record<string, { dx: number; dy: number }> = {
   'below':       { dx: 0,      dy: GAP_Y },
   'left':        { dx: -GAP_X, dy: 0 },
   'right':       { dx: GAP_X,  dy: 0 },
-  'above-left':  { dx: -GAP_X, dy: -GAP_Y },
-  'above-right': { dx: GAP_X,  dy: -GAP_Y },
-  'below-left':  { dx: -GAP_X, dy: GAP_Y },
-  'below-right': { dx: GAP_X,  dy: GAP_Y },
+  'above-left':  { dx: -GAP_X * 1.3, dy: -GAP_Y * 1.3 },
+  'above-right': { dx: GAP_X * 1.3,  dy: -GAP_Y * 1.3 },
+  'below-left':  { dx: -GAP_X * 1.3, dy: GAP_Y * 1.3 },
+  'below-right': { dx: GAP_X * 1.3,  dy: GAP_Y * 1.3 },
 }
 
 function layoutSpatial(diagram: DiagramSpec): Map<string, { x: number; y: number }> {
@@ -160,6 +171,9 @@ function layoutSpatial(diagram: DiagramSpec): Map<string, { x: number; y: number
       }
     })
   }
+
+  // Phase 3: Global deconflict pass
+  globalDeconflict(positions)
 
   return positions
 }
@@ -254,6 +268,39 @@ function deconflictPoint(
     candidate = { x: candidate.x + nudge.x, y: candidate.y + nudge.y }
   }
   return candidate
+}
+
+function globalDeconflict(positions: Map<string, { x: number; y: number }>) {
+  const ids = [...positions.keys()]
+  for (let pass = 0; pass < 10; pass++) {
+    let hadConflict = false
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        const posA = positions.get(ids[i])!
+        const posB = positions.get(ids[j])!
+        if (Math.abs(posA.x - posB.x) < MIN_DIST_X && Math.abs(posA.y - posB.y) < MIN_DIST_Y) {
+          const dx = posB.x - posA.x
+          const dy = posB.y - posA.y
+          // Push both apart symmetrically for better distribution
+          const pushX = dx === 0 ? GAP_X * 0.5 : 0
+          const pushY = dy === 0 ? GAP_Y * 0.5 : 0
+          if (Math.abs(dx) <= Math.abs(dy)) {
+            // Separate horizontally
+            const shift = pushX || GAP_X * 0.5
+            positions.set(ids[i], { x: posA.x - shift, y: posA.y })
+            positions.set(ids[j], { x: posB.x + shift, y: posB.y })
+          } else {
+            // Separate vertically
+            const shift = pushY || GAP_Y * 0.5
+            positions.set(ids[i], { x: posA.x, y: posA.y - shift })
+            positions.set(ids[j], { x: posB.x, y: posB.y + shift })
+          }
+          hadConflict = true
+        }
+      }
+    }
+    if (!hadConflict) break
+  }
 }
 
 /** Process / Timeline: left-to-right chain following flows_into edges */
