@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas-bg: #0a0a0f;
+  --color-canvas-surface: #141420;
+  --color-canvas-border: #2a2a3a;
+  --color-canvas-text: #e4e4ef;
+  --color-canvas-muted: #8888a0;
+  --color-canvas-accent: #6366f1;
+  --color-canvas-accent-hover: #818cf8;
+
+  /* Relationship colours */
+  --color-rel-flow: #64748b;
+  --color-rel-cause: #f59e0b;
+  --color-rel-contain: #6366f1;
+  --color-rel-interact: #3b82f6;
+  --color-rel-transform: #8b5cf6;
+  --color-rel-oppose: #ef4444;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-canvas-bg);
+  color: var(--color-canvas-text);
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* React Flow overrides for dark theme */
+.react-flow__background {
+  background-color: var(--color-canvas-bg) !important;
+}
