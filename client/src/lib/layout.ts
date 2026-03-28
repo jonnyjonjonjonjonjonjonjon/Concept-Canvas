@@ -25,18 +25,49 @@ export function diagramToFlow(
     },
   }))
 
-  const edges: Edge[] = diagram.relationships.map((rel, i) => ({
-    id: `edge-${i}`,
-    source: rel.source,
-    target: rel.target,
-    type: 'concept',
-    data: {
-      relationship: rel,
-      isVisible: rel.reveal_order <= currentStep,
-    },
-  }))
+  const edges: Edge[] = diagram.relationships.map((rel, i) => {
+    const sourcePos = positions.get(rel.source)
+    const targetPos = positions.get(rel.target)
+    const handles = sourcePos && targetPos
+      ? getBestHandles(sourcePos, targetPos)
+      : { sourceHandle: 'right', targetHandle: 'left' }
+
+    return {
+      id: `edge-${i}`,
+      source: rel.source,
+      target: rel.target,
+      sourceHandle: handles.sourceHandle,
+      targetHandle: handles.targetHandle,
+      type: 'concept',
+      data: {
+        relationship: rel,
+        isVisible: rel.reveal_order <= currentStep,
+      },
+    }
+  })
 
   return { nodes, edges }
+}
+
+/** Determine which handle sides to use based on relative node positions */
+function getBestHandles(
+  sourcePos: { x: number; y: number },
+  targetPos: { x: number; y: number }
+): { sourceHandle: string; targetHandle: string } {
+  const dx = targetPos.x - sourcePos.x
+  const dy = targetPos.y - sourcePos.y
+
+  if (Math.abs(dx) > Math.abs(dy)) {
+    // Horizontal dominant
+    return dx > 0
+      ? { sourceHandle: 'right', targetHandle: 'left' }
+      : { sourceHandle: 'left', targetHandle: 'right' }
+  } else {
+    // Vertical dominant
+    return dy > 0
+      ? { sourceHandle: 'bottom', targetHandle: 'top' }
+      : { sourceHandle: 'top', targetHandle: 'bottom' }
+  }
 }
 
 function computePositions(

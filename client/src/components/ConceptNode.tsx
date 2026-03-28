@@ -41,8 +41,15 @@ function ConceptNodeComponent({ data }: NodeProps) {
       `}
       onClick={() => setExpanded(!expanded)}
     >
-      <Handle type="target" position={Position.Left} className="!bg-canvas-border !border-canvas-border !w-2 !h-2" />
-      <Handle type="source" position={Position.Right} className="!bg-canvas-border !border-canvas-border !w-2 !h-2" />
+      {/* Handles on all 4 sides for flexible edge routing */}
+      <Handle id="top" type="source" position={Position.Top} className="!bg-canvas-border !border-canvas-border !w-2 !h-2 !opacity-0" />
+      <Handle id="bottom" type="source" position={Position.Bottom} className="!bg-canvas-border !border-canvas-border !w-2 !h-2 !opacity-0" />
+      <Handle id="left" type="source" position={Position.Left} className="!bg-canvas-border !border-canvas-border !w-2 !h-2 !opacity-0" />
+      <Handle id="right" type="source" position={Position.Right} className="!bg-canvas-border !border-canvas-border !w-2 !h-2 !opacity-0" />
+      <Handle id="top" type="target" position={Position.Top} className="!bg-canvas-border !border-canvas-border !w-2 !h-2 !opacity-0" />
+      <Handle id="bottom" type="target" position={Position.Bottom} className="!bg-canvas-border !border-canvas-border !w-2 !h-2 !opacity-0" />
+      <Handle id="left" type="target" position={Position.Left} className="!bg-canvas-border !border-canvas-border !w-2 !h-2 !opacity-0" />
+      <Handle id="right" type="target" position={Position.Right} className="!bg-canvas-border !border-canvas-border !w-2 !h-2 !opacity-0" />
 
       {/* Main card */}
       <div className={`
