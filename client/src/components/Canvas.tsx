@@ -10,6 +10,7 @@ import {
 import '@xyflow/react/dist/style.css'
 import { useStore } from '../stores/useStore.ts'
 import { diagramToFlow } from '../lib/layout.ts'
+import { getStepTiming } from '../lib/cameraFocus.ts'
 import { useCameraFollow } from '../hooks/useCameraFollow.ts'
 import { ConceptNode } from './ConceptNode.tsx'
 import { ConceptEdge, EdgeMarkers } from './ConceptEdge.tsx'
@@ -22,6 +23,7 @@ export function Canvas() {
   const diagram = useStore((s) => s.diagram)
   const currentStep = useStore((s) => s.currentStep)
   const isLoading = useStore((s) => s.isLoading)
+  const isPlaying = useStore((s) => s.isPlaying)
   const { onMoveStart } = useCameraFollow()
 
   const { nodes, edges } = useMemo(() => {
@@ -103,13 +105,21 @@ export function Canvas() {
       {diagram && (() => {
         const annotation = diagram.step_annotations?.[currentStep]
         if (!annotation) return null
+        const timing = getStepTiming(diagram, currentStep)
         return (
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
             <div
               key={currentStep}
-              className="px-5 py-3 rounded-xl bg-canvas-surface/90 border border-canvas-border backdrop-blur-md shadow-lg shadow-black/30 max-w-md text-center animate-fade-in"
+              className="rounded-xl bg-canvas-surface/90 border border-canvas-border backdrop-blur-md shadow-lg shadow-black/30 max-w-md text-center animate-fade-in overflow-hidden"
             >
-              <p className="text-sm text-canvas-text leading-relaxed">{annotation}</p>
+              <p className="text-sm text-canvas-text leading-relaxed px-5 pt-3 pb-2.5">{annotation}</p>
+              <div className="h-0.5 bg-canvas-border/50">
+                <div
+                  key={`timer-${currentStep}-${isPlaying}`}
+                  className={`h-full bg-canvas-accent/60 origin-left ${isPlaying ? 'animate-step-timer' : ''}`}
+                  style={isPlaying ? { animationDuration: `${timing.total}ms` } : { transform: 'scaleX(1)' }}
+                />
+              </div>
             </div>
           </div>
         )

@@ -48,3 +48,13 @@ body {
 .animate-fade-in {
   animation: fade-in 0.3s ease-out;
 }
+
+@keyframes step-timer {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+.animate-step-timer {
+  animation: step-timer linear forwards;
+  transform-origin: left;
+}
