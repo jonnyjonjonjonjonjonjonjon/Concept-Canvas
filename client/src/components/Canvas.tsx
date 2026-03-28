@@ -19,6 +19,21 @@ import { Sparkles } from 'lucide-react'
 const nodeTypes: NodeTypes = { concept: ConceptNode }
 const edgeTypes: EdgeTypes = { concept: ConceptEdge }
 
+const EXAMPLES = [
+  {
+    label: 'How coffee is made',
+    transcript: 'Coffee starts at farms where cherries are grown and hand-picked when ripe. The beans are extracted and processed by washing or drying, then shipped as green beans to roasters around the world. Roasters heat them at different temperatures to develop flavour, then the roasted beans are distributed to cafes and shops where they are ground, brewed, and served as coffee.',
+  },
+  {
+    label: 'Why projects fail',
+    transcript: 'Projects usually fail because of unclear requirements at the start, which leads to scope creep and misaligned expectations. Poor communication between teams causes duplicated work and missed dependencies. Unrealistic deadlines put pressure on quality, leading to technical debt that slows everything down. Eventually stakeholders lose confidence, funding gets cut, and the project collapses.',
+  },
+  {
+    label: 'The water cycle',
+    transcript: 'Water evaporates from oceans and lakes, rises into the atmosphere where it cools and condenses into clouds. The clouds accumulate moisture until precipitation occurs as rain or snow. The water falls to the ground, some flows into rivers and streams as runoff, some soaks into the ground as infiltration. Eventually all the water makes its way back to the oceans and the cycle starts again.',
+  },
+]
+
 export function Canvas() {
   const diagram = useStore((s) => s.diagram)
   const currentStep = useStore((s) => s.currentStep)
@@ -82,13 +97,13 @@ export function Canvas() {
               Explain any concept, process, or problem — by typing or speaking — and watch it transform into an interactive diagram.
             </p>
             <div className="flex flex-wrap justify-center gap-2 mt-2">
-              {['How coffee is made', 'Why projects fail', 'The water cycle'].map((ex) => (
+              {EXAMPLES.map((ex) => (
                 <button
-                  key={ex}
-                  onClick={() => setPendingInput(ex)}
+                  key={ex.label}
+                  onClick={() => setPendingInput(ex.transcript)}
                   className="text-xs px-3 py-1.5 rounded-full bg-canvas-surface border border-canvas-border text-canvas-muted hover:text-canvas-text hover:border-canvas-accent/50 transition-colors cursor-pointer"
                 >
-                  {ex}
+                  {ex.label}
                 </button>
               ))}
             </div>
