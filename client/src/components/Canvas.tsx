@@ -98,6 +98,22 @@ export function Canvas() {
           )}
         </div>
       )}
+
+      {/* Floating annotation */}
+      {diagram && (() => {
+        const annotation = diagram.step_annotations?.[currentStep]
+        if (!annotation) return null
+        return (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+            <div
+              key={currentStep}
+              className="px-5 py-3 rounded-xl bg-canvas-surface/90 border border-canvas-border backdrop-blur-md shadow-lg shadow-black/30 max-w-md text-center animate-fade-in"
+            >
+              <p className="text-sm text-canvas-text leading-relaxed">{annotation}</p>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
