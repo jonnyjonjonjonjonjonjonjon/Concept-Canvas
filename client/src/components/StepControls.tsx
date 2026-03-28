@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight, Play, Pause, SkipBack, SkipForward } from 'lucide-react'
 import { useStore } from '../stores/useStore.ts'
-
-const STEP_INTERVAL = 800
+import { getStepTiming } from '../lib/cameraFocus.ts'
 
 export function StepControls() {
   const currentStep = useStore((s) => s.currentStep)
@@ -13,18 +12,20 @@ export function StepControls() {
   const stepBack = useStore((s) => s.stepBack)
   const togglePlay = useStore((s) => s.togglePlay)
   const setCurrentStep = useStore((s) => s.setCurrentStep)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    if (isPlaying) {
-      timerRef.current = setInterval(() => {
-        stepForward()
-      }, STEP_INTERVAL)
-    }
+    if (!isPlaying || !diagram) return
+
+    const timing = getStepTiming(diagram, currentStep)
+    timerRef.current = setTimeout(() => {
+      stepForward()
+    }, timing.total)
+
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
+      if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [isPlaying, stepForward])
+  }, [isPlaying, currentStep, diagram, stepForward])
 
   if (!diagram) return null
 

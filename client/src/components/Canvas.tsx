@@ -4,14 +4,13 @@ import {
   Background,
   Controls,
   BackgroundVariant,
-  useReactFlow,
   type NodeTypes,
   type EdgeTypes,
-  type Node,
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { useStore } from '../stores/useStore.ts'
 import { diagramToFlow } from '../lib/layout.ts'
+import { useCameraFollow } from '../hooks/useCameraFollow.ts'
 import { ConceptNode } from './ConceptNode.tsx'
 import { ConceptEdge, EdgeMarkers } from './ConceptEdge.tsx'
 import { Sparkles } from 'lucide-react'
@@ -23,7 +22,7 @@ export function Canvas() {
   const diagram = useStore((s) => s.diagram)
   const currentStep = useStore((s) => s.currentStep)
   const isLoading = useStore((s) => s.isLoading)
-  const { fitView } = useReactFlow()
+  const { onMoveStart } = useCameraFollow()
 
   const { nodes, edges } = useMemo(() => {
     if (!diagram) return { nodes: [], edges: [] }
@@ -34,10 +33,6 @@ export function Canvas() {
     // Allow dragging but don't sync back to store
   }, [])
 
-  const onInit = useCallback(() => {
-    setTimeout(() => fitView({ padding: 0.2, duration: 400 }), 100)
-  }, [fitView])
-
   return (
     <div className="flex-1 h-full relative">
       <EdgeMarkers />
@@ -47,9 +42,7 @@ export function Canvas() {
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
-        onInit={onInit}
-        fitView
-        fitViewOptions={{ padding: 0.2 }}
+        onMoveStart={onMoveStart}
         proOptions={{ hideAttribution: true }}
         minZoom={0.2}
         maxZoom={2}
