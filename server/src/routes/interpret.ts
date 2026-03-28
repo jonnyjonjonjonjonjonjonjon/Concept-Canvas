@@ -1,29 +1,102 @@
 import type { Request, Response } from 'express'
+import Anthropic from '@anthropic-ai/sdk'
 import type { InterpretRequest, DiagramSpec } from '../../../shared/types.ts'
 
-// Mock response for development — will be replaced with real Claude API call
-const MOCK_DIAGRAM: DiagramSpec = {
-  title: 'How Coffee Gets from Farm to Cup',
-  summary: 'The journey of coffee from agricultural production through processing, shipping, roasting, and distribution.',
-  detected_mode: 'process',
-  entities: [
-    { id: 'e1', label: 'Coffee Farmer', type: 'actor', icon_name: 'tractor', description: 'Usually based in countries like Colombia or Ethiopia.', is_gap: false, reveal_order: 1 },
-    { id: 'e2', label: 'Harvesting', type: 'process', icon_name: 'hand', description: 'Cherries picked when ripe, usually by hand.', is_gap: false, reveal_order: 2 },
-    { id: 'e3', label: 'Processing', type: 'process', icon_name: 'filter', description: 'Beans extracted from cherries, then washed or dried.', is_gap: false, reveal_order: 3 },
-    { id: 'e4', label: 'Shipping', type: 'process', icon_name: 'ship', description: 'Green beans transported to roasters by sea.', is_gap: false, reveal_order: 4 },
-    { id: 'e5', label: 'Roasting', type: 'process', icon_name: 'flame', description: 'Beans roasted at different temperatures for flavour.', is_gap: false, reveal_order: 5 },
-    { id: 'e6', label: 'Distribution', type: 'process', icon_name: 'store', description: 'Roasted beans go to cafés or supermarkets.', is_gap: false, reveal_order: 6 },
-    { id: 'e7', label: 'Brewing & Drinking', type: 'process', icon_name: 'coffee', description: 'Someone grinds, brews, and drinks the coffee.', is_gap: false, reveal_order: 7 },
-  ],
-  relationships: [
-    { source: 'e1', target: 'e2', type: 'flows_into', reveal_order: 1 },
-    { source: 'e2', target: 'e3', type: 'flows_into', reveal_order: 2 },
-    { source: 'e3', target: 'e4', type: 'flows_into', reveal_order: 3 },
-    { source: 'e4', target: 'e5', type: 'flows_into', reveal_order: 4 },
-    { source: 'e5', target: 'e6', type: 'flows_into', reveal_order: 5 },
-    { source: 'e6', target: 'e7', type: 'flows_into', reveal_order: 6 },
-  ],
+let _client: Anthropic | null = null
+function getClient() {
+  if (!_client) _client = new Anthropic()
+  return _client
 }
+
+const SYSTEM_PROMPT = `You are a semantic interpretation engine for Concept Canvas, a speech-to-diagram app.
+
+Your job: take a spoken transcript and extract the conceptual structure as a diagram specification. You identify entities, their types, and how they relate to each other.
+
+## Output Format
+Return ONLY valid JSON matching this exact schema (no markdown, no explanation):
+
+{
+  "title": "Short title for the diagram",
+  "summary": "1-2 sentence summary of what was explained",
+  "detected_mode": "<one of: auto, process, cycle, cause_effect, system, timeline, containment, problem>",
+  "entities": [
+    {
+      "id": "e1",
+      "label": "Short label",
+      "type": "<one of: actor, object, process, concept, environment, event>",
+      "icon_name": "<lucide icon name like 'coffee', 'flame', 'user', 'cog'>",
+      "description": "Brief description of this entity from the transcript",
+      "is_gap": false,
+      "reveal_order": 1,
+      "role": null
+    }
+  ],
+  "relationships": [
+    {
+      "source": "e1",
+      "target": "e2",
+      "type": "<one of: flows_into, causes, contains, interacts_with, transforms_into, opposes>",
+      "label": "optional edge label",
+      "reveal_order": 1
+    }
+  ]
+}
+
+## Entity Types
+- actor: Things that DO (people, organisations, machines, agents)
+- object: Things that ARE (physical items, data, materials, resources)
+- process: Things that HAPPEN (actions, steps, transformations, activities)
+- concept: Abstract forces (ideas, pressures, qualities, principles)
+- environment: Where things happen (places, contexts, containers, systems)
+- event: Moments that change things (triggers, transitions, milestones)
+
+## Relationship Types
+- flows_into: Sequential flow ("then", "next", "leads to" in a process)
+- causes: Causal link ("because", "results in", "leads to" causally)
+- contains: Nesting ("within", "inside", "part of")
+- interacts_with: Bidirectional ("works with", "affects each other")
+- transforms_into: Metamorphosis ("becomes", "turns into", "evolves to")
+- opposes: Tension ("blocks", "prevents", "conflicts with")
+
+## Structural Modes
+Detect the best mode from the transcript, or use the user-specified mode:
+- process: Linear steps or workflow → use flows_into chains
+- cycle: Repeating loop → use flows_into in a circle, last connects to first
+- cause_effect: Causal chains → use causes relationships
+- system: Interconnected parts → use interacts_with, contains
+- timeline: Chronological events → use flows_into with event entities
+- containment: Nested structures → use contains relationships
+- problem: Problem analysis → assign roles (ude, root_cause, core_driver, contributing_factor, constraint, solution, gap)
+- auto: You decide the best fit
+
+## Icon Names
+Use common Lucide icon names. Examples: user, users, cog, flame, coffee, arrow-right, cloud, database, server, heart, star, zap, shield, target, flag, clock, map-pin, truck, factory, lightbulb, brain, eye, lock, unlock, trending-up, trending-down, alert-triangle, check-circle, x-circle, package, box, layers, git-branch, workflow, repeat, shuffle, filter, search, settings, tool, wrench, hammer, paintbrush, pen, file, folder, globe, building, home, store, shopping-cart, dollar-sign, credit-card, bar-chart, pie-chart, activity, thermometer, droplet, sun, moon, wind, leaf, tree, mountain, waves
+
+## Reveal Order
+Assign reveal_order starting from 1. This controls the step-by-step build animation:
+- Entities and relationships with the same reveal_order appear together
+- Usually: introduce an entity, then show its outgoing relationships in the next step
+- For processes: reveal in sequence (entity1=1, rel1=2, entity2=3, rel2=4...)
+- For systems: reveal core entities first, then connections
+
+## Problem Mode Roles
+Only assign roles when detected_mode is "problem":
+- ude: Undesirable Effect (symptom the speaker complains about)
+- root_cause: Underlying cause
+- core_driver: The root cause with the most influence
+- contributing_factor: Makes things worse but isn't the root cause
+- constraint: Blocks potential solutions
+- solution: Proposed fix
+- gap: Something unknown or uninvestigated (set is_gap=true too)
+
+## Rules
+1. Extract ALL meaningful concepts from the transcript — don't skip things
+2. Keep labels short (2-4 words)
+3. Descriptions should capture the detail from the transcript that the label compresses
+4. Use IDs like e1, e2, e3... for entities
+5. Every entity should connect to at least one other entity
+6. Aim for 4-12 entities depending on transcript complexity
+7. Return ONLY the JSON — no commentary, no markdown fences`
 
 export async function interpretRoute(req: Request, res: Response) {
   const { transcript, mode } = req.body as InterpretRequest
@@ -33,9 +106,35 @@ export async function interpretRoute(req: Request, res: Response) {
     return
   }
 
-  // TODO: Replace with real Claude API call
-  // For now, return mock data regardless of input
-  console.log(`[interpret] mode=${mode}, transcript=${transcript.substring(0, 80)}...`)
+  const userMessage = mode && mode !== 'auto'
+    ? `[Mode: ${mode}] ${transcript}`
+    : transcript
 
-  res.json({ diagram: MOCK_DIAGRAM })
+  try {
+    const message = await getClient().messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4096,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userMessage }],
+    })
+
+    const textBlock = message.content.find(b => b.type === 'text')
+    if (!textBlock || textBlock.type !== 'text') {
+      res.status(500).json({ error: 'No text response from Claude' })
+      return
+    }
+
+    const diagram: DiagramSpec = JSON.parse(textBlock.text)
+
+    if (!diagram.entities || !diagram.relationships || !diagram.title) {
+      res.status(500).json({ error: 'Invalid diagram structure from Claude' })
+      return
+    }
+
+    res.json({ diagram })
+  } catch (error) {
+    console.error('[interpret] Error:', error)
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    res.status(500).json({ error: message })
+  }
 }

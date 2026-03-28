@@ -2,11 +2,12 @@
   "extends": "../tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": ".",
+    "rootDir": "..",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "noEmit": false,
-    "declaration": true
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "declaration": false
   },
   "include": ["src", "../shared"]
 }

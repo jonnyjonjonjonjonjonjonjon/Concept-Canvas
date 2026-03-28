@@ -1,4 +1,11 @@
-import 'dotenv/config'
+import dotenv from 'dotenv'
+import { resolve } from 'path'
+
+// Load .env from project root (two levels up from server/src/)
+dotenv.config({ path: resolve(process.cwd(), '.env') })
+// Also try from server workspace root in case cwd is server/
+dotenv.config({ path: resolve(process.cwd(), '../.env') })
+
 import express from 'express'
 import cors from 'cors'
 import { interpretRoute } from './routes/interpret.ts'
