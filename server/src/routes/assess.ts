@@ -40,48 +40,60 @@ Directions: above, below, left, right, above-left, above-right, below-left, belo
 ## What Good Layout Looks Like
 
 ### Shape must match the concept
-- **Cycles** form a VISUAL CIRCLE — entities arranged clockwise, last entity adjacent to anchor, completing the loop. The eye should be able to trace the circle.
-- **Processes** form a HORIZONTAL BAND — left to right, wrapping serpentine if long.
-- **Cause/effect** forms an UPWARD TREE — root causes at bottom, effects branching above.
-- **Systems** form a RADIAL STAR — central hub with components radiating outward.
-- **Problems** form a CROSS/DIAMOND — causes below, symptoms above, solutions right, constraints left.
-- **Timelines** form a HORIZONTAL LINE — past left, future right.
+- **Processes** form a HORIZONTAL BAND — left to right, wider than tall, serpentine if 7+ steps
+- **Cycles** form a VISUAL CIRCLE — the layout engine handles this automatically; assess whether the entity ordering makes sense for a clockwise flow
+- **Cause/effect** forms a LEFT-TO-RIGHT TREE — root causes on the left, effects branching rightward
+- **Systems** form a RADIAL STAR — central hub with components radiating outward
+- **Problems** spread WIDER THAN TALL — causes below, symptoms above, solutions right
+- **Timelines** form a HORIZONTAL LINE — past left, future right
 
-### Design principles
-- **Minimise edge crossings** — connections should not criss-cross each other
-- **Flow follows a consistent direction** — the eye should move smoothly, never backtracking
-- **Spread entities across the canvas** — avoid vertical stacking or cramming into one quadrant
-- **Use diagonals to create flow** — above-right and below-left create natural reading arcs
-- **Adjacent entities in the flow should be adjacent spatially** — no long-distance jumps
-- **The last entity in a cycle MUST be near the anchor** to close the visual loop
-- **Related entities cluster together** — atmospheric processes near each other, ground processes near each other
+### Quantitative Checks (use the computed positions to verify)
+From the computed positions, check these concrete metrics:
+- **Overlaps**: Any two entities within 196px horizontally AND 126px vertically = overlap. Must be 0.
+- **Edge crossings**: Count pairs of edges that would visually cross. Target: 0 for ≤6 entities, minimize for larger.
+- **Edge length ratio**: Longest edge distance / shortest edge distance should be ≤ 3:1. Higher = chaotic.
+- **Aspect ratio**: Bounding box width / height should be between 1.0 and 4.0 (landscape preferred). Flag if outside.
+- **Center of mass**: Average (x,y) of all entities should be near the center of the bounding box. Lopsided = bad.
+- **Backtracking**: For process/timeline modes, entities later in the flow sequence must have higher x values (further right). Any violation = backtracking.
+- **Consistent flow direction**: All edges of the same relationship type should point in the same general compass direction (e.g. all flows_into edges go rightward).
+
+### Design principles (research-backed)
+- **Edge crossings are the #1 readability killer** (Purchase et al.) — prioritise eliminating crossings above all else
+- **Connected entities must be spatial neighbours** — if A→B, they should be adjacent, not separated by unrelated entities
+- **One dominant flow axis** — every diagram should have one clear direction. Don't mix left-to-right with top-to-bottom.
+- **Landscape orientation** — diagrams should be wider than tall to match screens. Avoid tall narrow layouts.
+- **Group related entities** — same-type or same-phase entities should cluster. Gap between clusters > gap within clusters.
+- **7 ± 2 items per visual row** — more than 9 entities in a line overwhelms working memory
+- **Spread out, don't stack up** — horizontal space is abundant on screens. Use it.
 
 ### When writing revised_hints
 - Provide hints for ALL entities (not just changed ones) so the layout is coherent as a whole
 - Exactly one entity must have { "anchor": true }
-- Think about the OVERALL SHAPE first, then place individual entities to achieve that shape
+- The anchor goes at TOP-LEFT for horizontal layouts, or CENTER for radial layouts
+- Think about the OVERALL SHAPE first, then place individual entities to achieve it
 - Trace the flow path mentally: can you follow connections from start to finish without the eye jumping randomly?
 - Every "relative_to" must reference an entity with a LOWER id
+- Prefer "right" and "below-right" for flow progression. Avoid "above" and "left" for forward flow — these cause backtracking.
 
 ## Understanding Computed Positions
 You will also receive the actual pixel positions computed from the spatial hints. In this coordinate system:
 - x increases to the RIGHT, y increases DOWNWARD (screen coordinates)
 - So "above" means LOWER y value, "below" means HIGHER y value
-- Each direction offset is roughly 280px horizontal, 180px vertical (234px for diagonals)
-- Use these positions to check if entities actually form the intended shape (circle, line, tree, etc.)
+- Each direction offset is roughly 280px horizontal, 180px vertical (364px/234px for diagonals)
+- Use these positions to verify the quantitative checks above
 - If two entities have very similar x,y they will overlap — this is bad
 
 ## Assessment Criteria
 
-1. **spatial_coherence** — Do positions reflect real-world spatial relationships? (sky above ground, causes below effects, time left-to-right)
+1. **spatial_coherence** — Do positions reflect real-world spatial relationships? Check the computed positions — is sky above ground? Are causes below effects? Does time flow left-to-right?
 
-2. **flow_readability** — Can a newcomer follow the logical flow? Do connections lead the eye naturally, or criss-cross?
+2. **flow_readability** — Can a newcomer follow the logical flow? Count edge crossings from the positions. Check for backtracking. Are connected entities actually adjacent?
 
-3. **grouping** — Are related entities clustered? Are distinct groups separated?
+3. **grouping** — Are related entities clustered? Is inter-group spacing larger than intra-group spacing? Do same-type entities sit near each other?
 
-4. **balance** — Is the diagram spread evenly, or cramped in one area?
+4. **balance** — Check aspect ratio and center of mass from the computed positions. Is it landscape? Is the center of mass near the center?
 
-5. **expert_intuition** — As a domain expert drawing this on a whiteboard, would you arrange it this way?
+5. **expert_intuition** — As a domain expert drawing this on a whiteboard, would you arrange it this way? Does the overall shape match the concept?
 
 ## Output Format
 

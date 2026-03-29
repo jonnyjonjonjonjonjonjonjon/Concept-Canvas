@@ -177,8 +177,18 @@ function layoutSpatial(diagram: DiagramSpec): Map<string, { x: number; y: number
     closeCycle(diagram, positions)
   }
 
+  // Phase 2.6: Process serpentine wrap (max 7 per row)
+  if (diagram.detected_mode === 'process' || diagram.detected_mode === 'timeline') {
+    serpentineWrap(positions, diagram)
+  }
+
   // Phase 3: Global deconflict pass
   globalDeconflict(positions)
+
+  // Phase 4: Post-processing — grid snap, aspect ratio, centering
+  snapToGrid(positions)
+  enforceAspectRatio(positions)
+  centerPositions(positions)
 
   return positions
 }
@@ -197,10 +207,10 @@ function closeCycle(
   const centerY = 0
 
   chain.forEach((entity, i) => {
-    // Start at bottom-center, go clockwise
-    // In screen coords: y increases downward, so bottom = positive y
-    // angle 0 = right, π/2 = down (screen), π = left, 3π/2 = up (screen)
-    const angle = Math.PI / 2 + (2 * Math.PI * i) / n
+    // Start at top-center (12 o'clock), go clockwise
+    // In screen coords: y+ = down, so top = negative y
+    // -π/2 = up (12 o'clock), then increase angle clockwise
+    const angle = -Math.PI / 2 + (2 * Math.PI * i) / n
     positions.set(entity.id, {
       x: centerX + Math.cos(angle) * radius,
       y: centerY + Math.sin(angle) * radius,
@@ -330,6 +340,66 @@ function globalDeconflict(positions: Map<string, { x: number; y: number }>) {
       }
     }
     if (!hadConflict) break
+  }
+}
+
+/** Serpentine wrap: if process/timeline has >7 entities in a row, wrap to new rows */
+function serpentineWrap(positions: Map<string, { x: number; y: number }>, diagram: DiagramSpec) {
+  const chain = orderByChain(diagram)
+  if (chain.length <= 7) return
+
+  const MAX_PER_ROW = 7
+  chain.forEach((entity, i) => {
+    const row = Math.floor(i / MAX_PER_ROW)
+    const col = i % MAX_PER_ROW
+    // Even rows go left-to-right, odd rows go right-to-left (serpentine)
+    const x = row % 2 === 0 ? col * GAP_X : (MAX_PER_ROW - 1 - col) * GAP_X
+    const y = row * GAP_Y * 1.5
+    positions.set(entity.id, { x, y })
+  })
+}
+
+/** Round all positions to nearest 10px for clean alignment */
+function snapToGrid(positions: Map<string, { x: number; y: number }>) {
+  for (const [id, pos] of positions) {
+    positions.set(id, {
+      x: Math.round(pos.x / 10) * 10,
+      y: Math.round(pos.y / 10) * 10,
+    })
+  }
+}
+
+/** If layout is taller than wide, rotate 90 degrees to make it landscape */
+function enforceAspectRatio(positions: Map<string, { x: number; y: number }>) {
+  if (positions.size < 2) return
+
+  const xs = [...positions.values()].map(p => p.x)
+  const ys = [...positions.values()].map(p => p.y)
+  const width = Math.max(...xs) - Math.min(...xs)
+  const height = Math.max(...ys) - Math.min(...ys)
+
+  if (height > 0 && width > 0 && height > width * 1.5) {
+    // Rotate: swap x and y
+    for (const [id, pos] of positions) {
+      positions.set(id, { x: pos.y, y: -pos.x })
+    }
+  }
+}
+
+/** Shift all positions so the center of mass is at (0, 0) */
+function centerPositions(positions: Map<string, { x: number; y: number }>) {
+  if (positions.size === 0) return
+
+  let sumX = 0, sumY = 0
+  for (const pos of positions.values()) {
+    sumX += pos.x
+    sumY += pos.y
+  }
+  const cx = sumX / positions.size
+  const cy = sumY / positions.size
+
+  for (const [id, pos] of positions) {
+    positions.set(id, { x: pos.x - cx, y: pos.y - cy })
   }
 }
 

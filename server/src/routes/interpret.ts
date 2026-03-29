@@ -109,22 +109,34 @@ For entities that logically sit between two others:
 
 Directions: above, below, left, right, above-left, above-right, below-left, below-right
 
+### Universal Layout Rules
+Follow these for EVERY diagram regardless of mode:
+1. ONE dominant flow direction — pick horizontal (left-to-right) or vertical (top-to-bottom) and be consistent. Don't mix.
+2. Connected entities MUST be spatial neighbours — if A flows_into B, place B directly adjacent to A, not separated by other entities.
+3. NO backtracking — edges should never flow opposite to the dominant direction. In a left-to-right flow, nothing should point leftward.
+4. Edge length uniformity — all connections should span roughly the same distance. Avoid some entities tightly packed while others are far apart.
+5. Entry point at top-left — the anchor or first entity goes at the top-left (for horizontal flow) or top-center (for radial/vertical layouts).
+6. Group related entities — same type or same phase should cluster spatially. Inter-group gaps should be larger than intra-group gaps.
+7. Landscape orientation — the overall layout should be wider than tall to match screen shape. Prefer spreading horizontally over stacking vertically.
+8. Minimize edge crossings — arrange entities so connections don't cross each other. This is the #1 factor in diagram readability.
+9. Max 7 entities per row — if a sequence exceeds 7, wrap to a new row.
+
 ### Layout recipes by mode
-Use these specific patterns — they describe the SHAPE the diagram should form:
+These describe the SHAPE the diagram should form:
 
-**process**: Anchor the first step at left. Each subsequent step goes "right". For 7+ steps, wrap: after step 6, next step goes "below" from step 6, then continue "left" to form a serpentine. The overall shape is a horizontal band.
+**process**: Anchor the first step at top-left. Each subsequent step goes "right". After 7 steps, serpentine wrap: step 8 goes "below" step 7, then steps 9+ continue "left" (second row reads right-to-left). The overall shape is a horizontal band, wider than tall.
 
-**cycle**: Form a VISUAL CIRCLE. Anchor the starting entity at bottom-center. Proceed CLOCKWISE using these directions in order: above → above-right → right → below-right → below → below-left → left → above-left. The LAST entity before the cycle closes should be positioned so it is adjacent to the anchor (e.g. "left" or "below-left" of anchor). The overall shape must be roughly circular.
+**cycle**: The layout engine will arrange cycle entities in a circle automatically. Assign spatial hints that reflect the real-world clockwise progression. Anchor the starting entity. Each step proceeds in a natural clockwise direction relative to its predecessor. The overall shape is circular.
 
-**cause_effect**: Anchor the deepest root cause at bottom-center. Direct effects go "above". If a cause has multiple effects, spread them "above-left" and "above-right". Final outcomes sit at the very top. The overall shape is a tree growing UPWARD from roots.
+**cause_effect**: Anchor the deepest root cause at top-left. Effects branch to the right and below. If a cause has multiple effects, spread them using "right" and "below-right". Parent entities should be to the left of their child effects. Max 3 levels deep — group intermediate causes if deeper. The overall shape is a tree growing LEFT-TO-RIGHT.
 
-**timeline**: Anchor the earliest event at left. Each subsequent event goes "right". Concurrent events share the same horizontal position but stack "above"/"below". The overall shape is a horizontal timeline.
+**timeline**: Anchor the earliest event at top-left. Each subsequent event goes "right". Concurrent events stack "above"/"below" at the same horizontal position. Max 7 per row, then serpentine. The overall shape is a horizontal timeline.
 
-**containment**: Anchor the outermost container at top. Children go "below", "below-left", "below-right". Nested children go further below their parent. The overall shape is a hierarchy tree.
+**containment**: Anchor the outermost container at top-left. Children go "right" and "below". Nested children go further right of their parent. The overall shape is a hierarchy tree, wider than tall.
 
-**system**: Anchor the most-connected entity at center. Primary subsystems radiate outward using directions that match their real-world position relative to the center. Secondary components go adjacent to their primary. The overall shape is a radial/star.
+**system**: Anchor the most-connected entity at center. Primary subsystems radiate outward matching their real-world position. Secondary components go adjacent to their primary. The overall shape is a radial star.
 
-**problem**: Anchor the core problem at center. Root causes go "below", "below-left", "below-right". Symptoms go "above", "above-left", "above-right". Solutions go "right". Constraints go "left". The overall shape is a cross/diamond.
+**problem**: Anchor the core problem at left. Root causes go "below" and "below-right". Symptoms go "above" and "above-right". Solutions go "right". Constraints go "below-left". The overall shape is wider than tall.
 
 **auto**: Choose the best recipe above based on the transcript content.
 
