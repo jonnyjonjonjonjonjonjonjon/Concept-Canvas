@@ -27,6 +27,7 @@ interface AppState {
   assessment: LayoutAssessment | null
   assessmentHistory: LayoutAssessment[]
   isAssessing: boolean
+  toast: { message: string; type: 'error' | 'warning' | 'info' } | null
 
   // Actions
   setDiagram: (diagram: DiagramSpec) => void
@@ -48,6 +49,8 @@ interface AppState {
   setAssessment: (assessment: LayoutAssessment | null) => void
   setAssessing: (isAssessing: boolean) => void
   applyRevisedHints: () => void
+  showToast: (message: string, type?: 'error' | 'warning' | 'info') => void
+  clearToast: () => void
 }
 
 const STORAGE_KEY = 'concept-canvas-saved'
@@ -82,6 +85,7 @@ export const useStore = create<AppState>((set, get) => ({
   assessment: null,
   assessmentHistory: [],
   isAssessing: false,
+  toast: null,
 
   setDiagram: (diagram) => {
     const maxStep = Math.max(
@@ -205,4 +209,10 @@ export const useStore = create<AppState>((set, get) => ({
     set({ assessment: null })
     get().setDiagram(updatedDiagram)
   },
+
+  showToast: (message, type = 'error') => {
+    set({ toast: { message, type } })
+    setTimeout(() => set({ toast: null }), 5000)
+  },
+  clearToast: () => set({ toast: null }),
 }))

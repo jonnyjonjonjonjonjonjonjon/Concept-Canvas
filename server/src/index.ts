@@ -24,6 +24,12 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' })
 })
 
+// Global error handler
+app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('[server] Unhandled error:', err)
+  res.status(500).json({ error: 'Something went wrong. Please try again.', code: 'server_error' })
+})
+
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
 })

@@ -4,6 +4,7 @@ import { writeFileSync, mkdirSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import type { AssessRequest, LayoutAssessment } from '../../../shared/types.ts'
+import { categoriseError } from './interpret.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const LOGS_DIR = resolve(__dirname, '../../logs')
@@ -220,7 +221,7 @@ export async function assessRoute(req: Request, res: Response) {
     res.json({ assessment })
   } catch (error) {
     console.error('[assess] Error:', error)
-    const errMessage = error instanceof Error ? error.message : 'Unknown error'
-    res.status(500).json({ error: errMessage })
+    const { status, message, code } = categoriseError(error)
+    res.status(status).json({ error: message, code })
   }
 }

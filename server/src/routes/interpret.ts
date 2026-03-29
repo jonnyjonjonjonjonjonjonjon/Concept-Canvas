@@ -206,9 +206,31 @@ export async function interpretRoute(req: Request, res: Response) {
     res.json({ diagram })
   } catch (error) {
     console.error('[interpret] Error:', error)
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    res.status(500).json({ error: message })
+    const { status, message, code } = categoriseError(error)
+    res.status(status).json({ error: message, code })
   }
+}
+
+export function categoriseError(error: unknown): { status: number; message: string; code: string } {
+  const raw = error instanceof Error ? error.message : String(error)
+
+  if (raw.includes('credit balance')) {
+    return { status: 402, message: 'API credits have run out. Please top up your Anthropic account.', code: 'credits_exhausted' }
+  }
+  if (raw.includes('rate') || (error && typeof error === 'object' && 'status' in error && (error as { status: number }).status === 429)) {
+    return { status: 429, message: 'Too many requests. Please wait a moment and try again.', code: 'rate_limited' }
+  }
+  if (raw.includes('Could not resolve authentication') || raw.includes('api_key') || raw.includes('API key')) {
+    return { status: 401, message: 'API key is missing or invalid. Check your .env file.', code: 'auth_error' }
+  }
+  if (error instanceof SyntaxError || raw.includes('Unexpected token') || raw.includes('JSON')) {
+    return { status: 502, message: 'Got an unexpected response from Claude. Please try again.', code: 'parse_error' }
+  }
+  if (raw.includes('ECONNREFUSED') || raw.includes('ETIMEDOUT') || raw.includes('fetch failed')) {
+    return { status: 503, message: 'Cannot reach the Claude API. Check your internet connection.', code: 'network_error' }
+  }
+
+  return { status: 500, message: raw || 'Something went wrong. Please try again.', code: 'unknown_error' }
 }
 
 const VALID_DIRECTIONS = new Set([

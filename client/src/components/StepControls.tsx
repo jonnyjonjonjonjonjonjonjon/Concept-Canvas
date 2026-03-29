@@ -16,6 +16,7 @@ export function StepControls() {
   const isAssessing = useStore((s) => s.isAssessing)
   const setAssessing = useStore((s) => s.setAssessing)
   const setAssessment = useStore((s) => s.setAssessment)
+  const showToast = useStore((s) => s.showToast)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleAssess = useCallback(async () => {
@@ -26,10 +27,11 @@ export function StepControls() {
       setAssessment(response.assessment)
     } catch (error) {
       console.error('Assessment failed:', error)
+      showToast(error instanceof Error ? error.message : 'Assessment failed. Please try again.')
     } finally {
       setAssessing(false)
     }
-  }, [diagram, isAssessing, setAssessing, setAssessment])
+  }, [diagram, isAssessing, setAssessing, setAssessment, showToast])
 
   useEffect(() => {
     if (!isPlaying || !diagram) return

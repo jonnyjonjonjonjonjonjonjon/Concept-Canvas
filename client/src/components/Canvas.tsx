@@ -15,6 +15,7 @@ import { useCameraFollow } from '../hooks/useCameraFollow.ts'
 import { ConceptNode } from './ConceptNode.tsx'
 import { ConceptEdge, EdgeMarkers } from './ConceptEdge.tsx'
 import { AssessmentPanel } from './AssessmentPanel.tsx'
+import { Toast } from './Toast.tsx'
 import { Sparkles } from 'lucide-react'
 
 const nodeTypes: NodeTypes = { concept: ConceptNode }
@@ -111,6 +112,9 @@ export function Canvas() {
           </div>
         </div>
       )}
+
+      {/* Toast notifications */}
+      <Toast />
 
       {/* Assessment panel */}
       <AssessmentPanel />
