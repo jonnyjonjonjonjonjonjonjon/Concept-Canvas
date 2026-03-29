@@ -172,10 +172,40 @@ function layoutSpatial(diagram: DiagramSpec): Map<string, { x: number; y: number
     })
   }
 
+  // Phase 2.5: Cycle closure — override with circular layout
+  if (diagram.detected_mode === 'cycle') {
+    closeCycle(diagram, positions)
+  }
+
   // Phase 3: Global deconflict pass
   globalDeconflict(positions)
 
   return positions
+}
+
+/** For cycle diagrams, redistribute chain entities around a circle */
+function closeCycle(
+  diagram: DiagramSpec,
+  positions: Map<string, { x: number; y: number }>
+) {
+  const chain = orderByChain(diagram)
+  if (chain.length < 3) return
+
+  const n = chain.length
+  const radius = Math.max(200, n * 55)
+  const centerX = 0
+  const centerY = 0
+
+  chain.forEach((entity, i) => {
+    // Start at bottom-center, go clockwise
+    // In screen coords: y increases downward, so bottom = positive y
+    // angle 0 = right, π/2 = down (screen), π = left, 3π/2 = up (screen)
+    const angle = Math.PI / 2 + (2 * Math.PI * i) / n
+    positions.set(entity.id, {
+      x: centerX + Math.cos(angle) * radius,
+      y: centerY + Math.sin(angle) * radius,
+    })
+  })
 }
 
 function buildPlacementOrder(entities: Entity[]): { ordered: Entity[]; fallbacks: Entity[] } {
