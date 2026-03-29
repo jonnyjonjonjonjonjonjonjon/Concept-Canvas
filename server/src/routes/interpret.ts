@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express'
 import Anthropic from '@anthropic-ai/sdk'
 import type { InterpretRequest, DiagramSpec } from '../../../shared/types.ts'
+import { getMockDiagram } from '../mocks.ts'
 
 let _client: Anthropic | null = null
 function getClient() {
@@ -181,6 +182,13 @@ export async function interpretRoute(req: Request, res: Response) {
 
   if (!transcript) {
     res.status(400).json({ error: 'transcript is required' })
+    return
+  }
+
+  if (process.env.MOCK_MODE === 'true') {
+    console.log(`[interpret] Mock mode — returning pre-built diagram`)
+    const diagram = getMockDiagram(transcript)
+    res.json({ diagram })
     return
   }
 

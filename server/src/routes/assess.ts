@@ -5,6 +5,7 @@ import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import type { AssessRequest, LayoutAssessment } from '../../../shared/types.ts'
 import { categoriseError } from './interpret.ts'
+import { getMockAssessment } from '../mocks.ts'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const LOGS_DIR = resolve(__dirname, '../../logs')
@@ -184,6 +185,12 @@ export async function assessRoute(req: Request, res: Response) {
 
   if (!diagram || !diagram.entities) {
     res.status(400).json({ error: 'diagram is required' })
+    return
+  }
+
+  if (process.env.MOCK_MODE === 'true') {
+    console.log(`[assess] Mock mode — returning simulated assessment`)
+    res.json({ assessment: getMockAssessment() })
     return
   }
 
