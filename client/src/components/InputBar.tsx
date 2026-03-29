@@ -12,6 +12,7 @@ export function InputBar() {
   const setLoading = useStore((s) => s.setLoading)
   const setDiagram = useStore((s) => s.setDiagram)
   const addMessage = useStore((s) => s.addMessage)
+  const showToast = useStore((s) => s.showToast)
   const pendingInput = useStore((s) => s.pendingInput)
   const setPendingInput = useStore((s) => s.setPendingInput)
 
@@ -50,12 +51,8 @@ export function InputBar() {
       })
     } catch (error) {
       console.error('Failed to interpret:', error)
-      addMessage({
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: `Error: ${error instanceof Error ? error.message : 'Failed to interpret transcript'}`,
-        timestamp: Date.now(),
-      })
+      const msg = error instanceof Error ? error.message : 'Failed to interpret transcript'
+      showToast(msg)
     } finally {
       setLoading(false)
     }
